@@ -1,0 +1,44 @@
+FIRST Sets
+==========
+
+PROGRAM = { agent, system }
+AGENT_LIST = { agent, ε }
+AGENT_DEF = { agent }
+AGENT_BODY = { tool, task, ε }
+TOOLS = { tool, ε }
+TOOL_DECLARATION = { tool }
+TASKS_DECLARATIONS = { task, ε }
+TASK_DECLARATION = { task }
+TASK_ARGUMENTS = { string, int, list, bool, ε }
+TASK_ARGUMENT = { string, int, list, bool }
+TASK_ARGUMENTS_TAIL = { "," , ε }
+TASK_RETURN_TYPE = { string, int, list, bool }
+ACTIONS = { action, ε }
+ACTION = { action }
+ACTION_ARGUMENTS = { STRING_LIT, INT_LIT, BOOL_LIT, id, ε }
+ACTION_ARGUMENT = { STRING_LIT, INT_LIT, BOOL_LIT, id }
+ACTION_ARGUMENTS_TAIL = { "," , ε }
+SYSTEM_BODY = { system }
+STATEMENTS = { string, int, list, bool, id, for, if, ε }
+STATEMENT = { string, int, list, bool, id, for, if }
+VARIABLE_DECLARATION = { string, int, list, bool }
+EXPRESSION = { -, INT_LIT, STRING_LIT, BOOL_LIT, id, "(", run, "[" }
+REL_TAIL = { ==, <=, <, >=, >, !=, ε }
+ADD_EXPR = { -, INT_LIT, STRING_LIT, BOOL_LIT, id, "(", run, "[" }
+ADD_TAIL = { +, -, ε }
+TERM = { -, INT_LIT, STRING_LIT, BOOL_LIT, id, "(", run, "[" }
+TERM_TAIL = { *, /, ε }
+FACTOR = { -, INT_LIT, STRING_LIT, BOOL_LIT, id, "(", run, "[" }
+FUNCTION_CALL = { run }
+FUNCTION_ARGUMENTS = { id, ε }
+FUNCTION_ARGUMENT_LIST = { id }
+FUNCTION_ARGUMENT = { id }
+FUNCTION_ARGUMENT_TAIL = { "," , ε }
+OPERATION = { ==, <=, <, >=, >, != }
+LIST_DECLARATION = { "[" }
+LIST_ITEMS = { -, INT_LIT, STRING_LIT, BOOL_LIT, id, "(", run, "[", ε }
+LIST_ITEMS_TAIL = { "," , ε }
+VARIABLE_ASSIGNMENT = { id }
+FOR_STATEMENT = { for }
+IF_STATEMENT = { if }
+TYPE = { string, int, list, bool }

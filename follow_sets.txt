@@ -1,0 +1,44 @@
+FOLLOW Sets
+===========
+
+PROGRAM = { $ }
+AGENT_LIST = { system }
+AGENT_DEF = { agent, system }
+AGENT_BODY = { "}" }
+TOOLS = { task, "}" }
+TOOL_DECLARATION = { tool, task, "}" }
+TASKS_DECLARATIONS = { "}" }
+TASK_DECLARATION = { task, "}" }
+TASK_ARGUMENTS = { ")" }
+TASK_ARGUMENT = { "," , ")" }
+TASK_ARGUMENTS_TAIL = { ")" }
+TASK_RETURN_TYPE = { "{" }
+ACTIONS = { "}" }
+ACTION = { action, "}" }
+ACTION_ARGUMENTS = { ")" }
+ACTION_ARGUMENT = { "," , ")" }
+ACTION_ARGUMENTS_TAIL = { ")" }
+SYSTEM_BODY = { $ }
+STATEMENTS = { "}" }
+STATEMENT = { string, int, list, bool, id, for, if, "}" }
+VARIABLE_DECLARATION = { string, int, list, bool, id, for, if, "}" }
+VARIABLE_ASSIGNMENT = { string, int, list, bool, id, for, if, "}" }
+FOR_STATEMENT = { string, int, list, bool, id, for, if, "}" }
+IF_STATEMENT = { string, int, list, bool, id, for, if, "}" }
+EXPRESSION = { ")", "," , "]", {, string, int, list, bool, id, for, if, "}" }
+REL_TAIL = { ")", ",", "]", "{", string, int, list, bool, id, for, if, "}" }
+ADD_EXPR = { ==, <=, <, >=, >, !=, ")", ",", "]", "{", string, int, list, bool, id, for, if, "}" }
+ADD_TAIL = { ==, <=, <, >=, >, !=, ")", ",", "]", "{", string, int, list, bool, id, for, if, "}" }
+TERM = { +, -, ==, <=, <, >=, >, !=, ")", ",", "]", "{", string, int, list, bool, id, for, if, "}" }
+TERM_TAIL = { +, -, ==, <=, <, >=, >, !=, ")", ",", "]", "{", string, int, list, bool, id, for, if, "}" }
+FACTOR = { *, /, +, -, ==, <=, <, >=, >, !=, ")", ",", "]", "{", string, int, list, bool, id, for, if, "}" }
+FUNCTION_CALL = { *, /, +, -, ==, <=, <, >=, >, !=, ")", ",", "]", "{", string, int, list, bool, id, for, if, "}" }
+FUNCTION_ARGUMENTS = { ")" }
+FUNCTION_ARGUMENT_LIST = { ")" }
+FUNCTION_ARGUMENT = { ",", ")" }
+FUNCTION_ARGUMENT_TAIL = { ")" }
+OPERATION = { -, INT_LIT, STRING_LIT, BOOL_LIT, id, "(", run, "[" }
+LIST_DECLARATION = { *, /, +, -, ==, <=, <, >=, >, !=, ")", ",", "]", "{", string, int, list, bool, id, for, if, "}" }
+LIST_ITEMS = { "]" }
+LIST_ITEMS_TAIL = { "]" }
+TYPE = { id }
