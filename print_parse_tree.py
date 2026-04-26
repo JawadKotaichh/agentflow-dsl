@@ -2,9 +2,9 @@ from parser import ASTNode
 
 
 def print_parse_tree(node, prefix="", is_last=True, label=None):
-    connector = "└── " if is_last else "├── "
+    connector = "`-- " if is_last else "|-- "
     line_prefix = prefix + connector if prefix else ""
-    child_prefix = prefix + ("    " if is_last else "│   ")
+    child_prefix = prefix + ("    " if is_last else "|   ")
 
     def format_scalar(value):
         return repr(value) if isinstance(value, str) else str(value)
