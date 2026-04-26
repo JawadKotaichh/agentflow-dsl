@@ -1,6 +1,7 @@
 from lexer import Lexer
 from parser import Parser
 from print_parse_tree import print_parse_tree
+from semantic import SemanticAnalyzer
 
 
 source = """
@@ -35,3 +36,7 @@ source = """
 tokens = Lexer(source).tokenize()
 ast = Parser(tokens).parse()
 print_parse_tree(ast)
+
+analysis = SemanticAnalyzer().analyze(ast)
+print("\nSemantic analysis: OK")
+print(analysis.symbol_tables())
