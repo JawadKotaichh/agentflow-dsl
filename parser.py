@@ -11,12 +11,24 @@ class ParserError(Exception):
 class ASTNode:
     token_type: str
     value: Any = None
+    line: int | None = None
+    column: int | None = None
 
 
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
         self.pos = 0
+
+    def make_node(self, token_type, value=None, token=None, anchor=None):
+        if token is not None:
+            return ASTNode(token_type, value, token.line, token.column)
+
+        if anchor is not None:
+            return ASTNode(token_type, value, anchor.line, anchor.column)
+
+        current = self.current()
+        return ASTNode(token_type, value, current.line, current.column)
 
     def current(self):
         if self.pos < len(self.tokens):
@@ -103,14 +115,16 @@ class Parser:
 
     def parse_program(self):
         if self.peek_type() in {TokenType.AGENT, TokenType.SYSTEM}:
+            start_tok = self.current()
             agent_list = self.parse_agent_list()
             system_body = self.parse_system_body()
-            return ASTNode(
+            return self.make_node(
                 "Program",
                 {
                     "agents": agent_list,
                     "system": system_body,
                 },
+                token=start_tok,
             )
         self.error("PROGRAM")
 
@@ -127,31 +141,34 @@ class Parser:
 
     def parse_agent_def(self):
         if self.check(TokenType.AGENT):
-            self.expect(TokenType.AGENT)
+            start_tok = self.expect(TokenType.AGENT)
             name = self.expect(TokenType.ID)
             self.expect(TokenType.LEFT_BRACE)
             body = self.parse_agent_body()
             self.expect(TokenType.RIGHT_BRACE)
 
-            return ASTNode(
+            return self.make_node(
                 "AgentDef",
                 {
                     "name": name.lexeme,
                     "body": body,
                 },
+                token=start_tok,
             )
         self.error("AGENT_DEF")
 
     def parse_agent_body(self):
         if self.peek_type() in {TokenType.TOOL, TokenType.TASK, TokenType.RIGHT_BRACE}:
+            start_tok = self.current()
             tools = self.parse_tools()
             tasks = self.parse_tasks_declarations()
-            return ASTNode(
+            return self.make_node(
                 "AgentBody",
                 {
                     "tools": tools,
                     "tasks": tasks,
                 },
+                token=start_tok,
             )
         self.error("AGENT_BODY")
 
@@ -167,9 +184,9 @@ class Parser:
 
     def parse_tool_declaration(self):
         if self.check(TokenType.TOOL):
-            self.expect(TokenType.TOOL)
+            start_tok = self.expect(TokenType.TOOL)
             name = self.expect(TokenType.ID)
-            return ASTNode("ToolDeclaration", name.lexeme)
+            return self.make_node("ToolDeclaration", name.lexeme, token=start_tok)
         self.error("TOOL_DECLARATION")
 
     def parse_tasks_declarations(self):
@@ -184,22 +201,22 @@ class Parser:
 
     def parse_type(self):
         if self.check(TokenType.STRING_KEYWORD):
-            self.expect(TokenType.STRING_KEYWORD)
-            return ASTNode("Type", "string")
+            tok = self.expect(TokenType.STRING_KEYWORD)
+            return self.make_node("Type", "string", token=tok)
         elif self.check(TokenType.INT_KEYWORD):
-            self.expect(TokenType.INT_KEYWORD)
-            return ASTNode("Type", "int")
+            tok = self.expect(TokenType.INT_KEYWORD)
+            return self.make_node("Type", "int", token=tok)
         elif self.check(TokenType.LIST_KEYWORD):
-            self.expect(TokenType.LIST_KEYWORD)
-            return ASTNode("Type", "list")
+            tok = self.expect(TokenType.LIST_KEYWORD)
+            return self.make_node("Type", "list", token=tok)
         elif self.check(TokenType.BOOL_KEYWORD):
-            self.expect(TokenType.BOOL_KEYWORD)
-            return ASTNode("Type", "bool")
+            tok = self.expect(TokenType.BOOL_KEYWORD)
+            return self.make_node("Type", "bool", token=tok)
         self.error("TYPE")
 
     def parse_task_declaration(self):
         if self.check(TokenType.TASK):
-            self.expect(TokenType.TASK)
+            start_tok = self.expect(TokenType.TASK)
             task_name = self.expect(TokenType.ID)
             self.expect(TokenType.LEFT_PAREN)
             parameters = self.parse_task_arguments()
@@ -210,7 +227,7 @@ class Parser:
             actions = self.parse_actions()
             self.expect(TokenType.RIGHT_BRACE)
 
-            return ASTNode(
+            return self.make_node(
                 "TaskDeclaration",
                 {
                     "name": task_name.lexeme,
@@ -218,6 +235,7 @@ class Parser:
                     "return_type": return_type,
                     "actions": actions,
                 },
+                token=start_tok,
             )
 
         self.error("TASK_DECLARATION")
@@ -235,15 +253,17 @@ class Parser:
 
     def parse_task_argument(self):
         if self.is_type_token():
+            start_tok = self.current()
             arg_type = self.parse_type()
             arg_name = self.expect(TokenType.ID)
 
-            return ASTNode(
+            return self.make_node(
                 "TaskArgument",
                 {
                     "type": arg_type,
                     "name": arg_name.lexeme,
                 },
+                token=start_tok,
             )
 
         self.error("TASK_ARGUMENT")
@@ -262,15 +282,17 @@ class Parser:
 
     def parse_task_return_type(self):
         if self.is_type_token():
+            start_tok = self.current()
             return_type = self.parse_type()
             return_name = self.expect(TokenType.ID)
 
-            return ASTNode(
+            return self.make_node(
                 "TaskReturnType",
                 {
                     "type": return_type,
                     "name": return_name.lexeme,
                 },
+                token=start_tok,
             )
 
         self.error("TASK_RETURN_TYPE")
@@ -288,19 +310,20 @@ class Parser:
 
     def parse_action(self):
         if self.check(TokenType.ACTION):
-            self.expect(TokenType.ACTION)
+            start_tok = self.expect(TokenType.ACTION)
             self.expect(TokenType.COLON)
             action_name = self.expect(TokenType.ID)
             self.expect(TokenType.LEFT_PAREN)
             arguments = self.parse_action_arguments()
             self.expect(TokenType.RIGHT_PAREN)
 
-            return ASTNode(
+            return self.make_node(
                 "Action",
                 {
                     "name": action_name.lexeme,
                     "arguments": arguments,
                 },
+                token=start_tok,
             )
 
         self.error("ACTION")
@@ -319,42 +342,46 @@ class Parser:
     def parse_action_argument(self):
         if self.check(TokenType.STRING_LIT):
             tok = self.expect(TokenType.STRING_LIT)
-            return ASTNode(
+            return self.make_node(
                 "ActionArgument",
                 {
                     "kind": "string",
                     "value": tok.lexeme,
                 },
+                token=tok,
             )
 
         elif self.check(TokenType.INT_LIT):
             tok = self.expect(TokenType.INT_LIT)
-            return ASTNode(
+            return self.make_node(
                 "ActionArgument",
                 {
                     "kind": "int",
                     "value": tok.lexeme,
                 },
+                token=tok,
             )
 
         elif self.check(TokenType.BOOL_LIT):
             tok = self.expect(TokenType.BOOL_LIT)
-            return ASTNode(
+            return self.make_node(
                 "ActionArgument",
                 {
                     "kind": "bool",
                     "value": tok.lexeme,
                 },
+                token=tok,
             )
 
         elif self.check(TokenType.ID):
             tok = self.expect(TokenType.ID)
-            return ASTNode(
+            return self.make_node(
                 "ActionArgument",
                 {
                     "kind": "id",
                     "value": tok.lexeme,
                 },
+                token=tok,
             )
 
         self.error("ACTION_ARGUMENT")
@@ -373,16 +400,17 @@ class Parser:
 
     def parse_system_body(self):
         if self.check(TokenType.SYSTEM):
-            self.expect(TokenType.SYSTEM)
+            start_tok = self.expect(TokenType.SYSTEM)
             self.expect(TokenType.LEFT_BRACE)
             statements = self.parse_statements()
             self.expect(TokenType.RIGHT_BRACE)
 
-            return ASTNode(
+            return self.make_node(
                 "SystemBody",
                 {
                     "statements": statements,
                 },
+                token=start_tok,
             )
 
         self.error("SYSTEM_BODY")
@@ -415,41 +443,44 @@ class Parser:
 
     def parse_variable_declaration(self):
         if self.is_type_token():
+            start_tok = self.current()
             var_type = self.parse_type()
             var_name = self.expect(TokenType.ID)
             self.expect(TokenType.ASSIGN)
             expr = self.parse_expression()
 
-            return ASTNode(
+            return self.make_node(
                 "VariableDeclaration",
                 {
                     "type": var_type,
                     "name": var_name.lexeme,
                     "value": expr,
                 },
+                token=start_tok,
             )
 
         self.error("VARIABLE_DECLARATION")
 
     def parse_variable_assignment(self):
         if self.check(TokenType.ID):
-            var_name = self.expect(TokenType.ID)
+            start_tok = self.expect(TokenType.ID)
             self.expect(TokenType.ASSIGN)
             expr = self.parse_expression()
 
-            return ASTNode(
+            return self.make_node(
                 "VariableAssignment",
                 {
-                    "name": var_name.lexeme,
+                    "name": start_tok.lexeme,
                     "value": expr,
                 },
+                token=start_tok,
             )
 
         self.error("VARIABLE_ASSIGNMENT")
 
     def parse_for_statement(self):
         if self.check(TokenType.FOR):
-            self.expect(TokenType.FOR)
+            start_tok = self.expect(TokenType.FOR)
             loop_var = self.expect(TokenType.ID)
             self.expect(TokenType.IN)
             iterable_name = self.expect(TokenType.ID)
@@ -457,31 +488,33 @@ class Parser:
             body = self.parse_statements()
             self.expect(TokenType.RIGHT_BRACE)
 
-            return ASTNode(
+            return self.make_node(
                 "ForStatement",
                 {
                     "iterator": loop_var.lexeme,
                     "iterable": iterable_name.lexeme,
                     "body": body,
                 },
+                token=start_tok,
             )
 
         self.error("FOR_STATEMENT")
 
     def parse_if_statement(self):
         if self.check(TokenType.IF):
-            self.expect(TokenType.IF)
+            start_tok = self.expect(TokenType.IF)
             condition = self.parse_expression()
             self.expect(TokenType.LEFT_BRACE)
             body = self.parse_statements()
             self.expect(TokenType.RIGHT_BRACE)
 
-            return ASTNode(
+            return self.make_node(
                 "IfStatement",
                 {
                     "condition": condition,
                     "body": body,
                 },
+                token=start_tok,
             )
 
         self.error("IF_STATEMENT")
@@ -570,15 +603,17 @@ class Parser:
 
     def parse_rel_tail(self, left):
         if self.is_rel_op():
+            op_tok = self.current()
             op = self.parse_operation()
             right = self.parse_add_expr()
-            node = ASTNode(
+            node = self.make_node(
                 "BinaryOp",
                 {
                     "op": op,
                     "left": left,
                     "right": right,
                 },
+                token=op_tok,
             )
             return node
 
@@ -596,28 +631,30 @@ class Parser:
 
     def parse_add_tail(self, left):
         if self.check(TokenType.PLUS):
-            self.expect(TokenType.PLUS)
+            op_tok = self.expect(TokenType.PLUS)
             right = self.parse_term()
-            node = ASTNode(
+            node = self.make_node(
                 "BinaryOp",
                 {
                     "op": "+",
                     "left": left,
                     "right": right,
                 },
+                token=op_tok,
             )
             return self.parse_add_tail(node)
 
         elif self.check(TokenType.MINUS):
-            self.expect(TokenType.MINUS)
+            op_tok = self.expect(TokenType.MINUS)
             right = self.parse_term()
-            node = ASTNode(
+            node = self.make_node(
                 "BinaryOp",
                 {
                     "op": "-",
                     "left": left,
                     "right": right,
                 },
+                token=op_tok,
             )
             return self.parse_add_tail(node)
 
@@ -635,28 +672,30 @@ class Parser:
 
     def parse_term_tail(self, left):
         if self.check(TokenType.MULT):
-            self.expect(TokenType.MULT)
+            op_tok = self.expect(TokenType.MULT)
             right = self.parse_factor()
-            node = ASTNode(
+            node = self.make_node(
                 "BinaryOp",
                 {
                     "op": "*",
                     "left": left,
                     "right": right,
                 },
+                token=op_tok,
             )
             return self.parse_term_tail(node)
 
         elif self.check(TokenType.DIV):
-            self.expect(TokenType.DIV)
+            op_tok = self.expect(TokenType.DIV)
             right = self.parse_factor()
-            node = ASTNode(
+            node = self.make_node(
                 "BinaryOp",
                 {
                     "op": "/",
                     "left": left,
                     "right": right,
                 },
+                token=op_tok,
             )
             return self.parse_term_tail(node)
 
@@ -667,31 +706,32 @@ class Parser:
 
     def parse_factor(self):
         if self.check(TokenType.MINUS):
-            self.expect(TokenType.MINUS)
+            op_tok = self.expect(TokenType.MINUS)
             operand = self.parse_factor()
-            return ASTNode(
+            return self.make_node(
                 "UnaryOp",
                 {
                     "op": "-",
                     "operand": operand,
                 },
+                token=op_tok,
             )
 
         elif self.check(TokenType.INT_LIT):
             tok = self.expect(TokenType.INT_LIT)
-            return ASTNode("IntLiteral", tok.lexeme)
+            return self.make_node("IntLiteral", tok.lexeme, token=tok)
 
         elif self.check(TokenType.STRING_LIT):
             tok = self.expect(TokenType.STRING_LIT)
-            return ASTNode("StringLiteral", tok.lexeme)
+            return self.make_node("StringLiteral", tok.lexeme, token=tok)
 
         elif self.check(TokenType.BOOL_LIT):
             tok = self.expect(TokenType.BOOL_LIT)
-            return ASTNode("BoolLiteral", tok.lexeme)
+            return self.make_node("BoolLiteral", tok.lexeme, token=tok)
 
         elif self.check(TokenType.ID):
             tok = self.expect(TokenType.ID)
-            return ASTNode("Identifier", tok.lexeme)
+            return self.make_node("Identifier", tok.lexeme, token=tok)
 
         elif self.check(TokenType.LEFT_PAREN):
             self.expect(TokenType.LEFT_PAREN)
@@ -709,7 +749,7 @@ class Parser:
 
     def parse_function_call(self):
         if self.check(TokenType.RUN):
-            self.expect(TokenType.RUN)
+            start_tok = self.expect(TokenType.RUN)
             agent_name = self.expect(TokenType.ID)
             self.expect(TokenType.DOT)
             task_name = self.expect(TokenType.ID)
@@ -717,13 +757,14 @@ class Parser:
             arguments = self.parse_function_arguments()
             self.expect(TokenType.RIGHT_PAREN)
 
-            return ASTNode(
+            return self.make_node(
                 "FunctionCall",
                 {
                     "agent": agent_name.lexeme,
                     "task": task_name.lexeme,
                     "arguments": arguments,
                 },
+                token=start_tok,
             )
 
         self.error("FUNCTION_CALL")
@@ -748,7 +789,7 @@ class Parser:
     def parse_function_argument(self):
         if self.check(TokenType.ID):
             tok = self.expect(TokenType.ID)
-            return ASTNode("Identifier", tok.lexeme)
+            return self.make_node("Identifier", tok.lexeme, token=tok)
 
         self.error("FUNCTION_ARGUMENT")
 
@@ -793,11 +834,11 @@ class Parser:
 
     def parse_list_declaration(self):
         if self.check(TokenType.LEFT_BRACKET):
-            self.expect(TokenType.LEFT_BRACKET)
+            start_tok = self.expect(TokenType.LEFT_BRACKET)
             items = self.parse_list_items()
             self.expect(TokenType.RIGHT_BRACKET)
 
-            return ASTNode("ListLiteral", items)
+            return self.make_node("ListLiteral", items, token=start_tok)
 
         self.error("LIST_DECLARATION")
 
